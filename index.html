@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mohaserei System Network (MSN) — Wallet Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Kantumruy Pro', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              bg: '#050914',
+              surface: '#0a1224',
+              card: 'rgba(13, 24, 46, 0.72)',
+              border: 'rgba(34, 211, 238, 0.22)',
+              cyan: '#22d3ee',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+            },
+          },
+          boxShadow: {
+            holo: '0 0 0 1px rgba(34, 211, 238, 0.16), 0 16px 40px -12px rgba(2, 6, 23, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.06)',
+            cyanGlow: '0 0 24px rgba(34, 211, 238, 0.28)',
+            emeraldGlow: '0 0 24px rgba(16, 185, 129, 0.25)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      background-color: #050914;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+
+    /* Subtle cyber grid + radial hologram glow background */
+    .holo-backdrop {
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.13), transparent 42%),
+        radial-gradient(circle at 85% 18%, rgba(16, 185, 129, 0.11), transparent 40%),
+        linear-gradient(to right, rgba(34, 211, 238, 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(34, 211, 238, 0.045) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    .glass-panel {
+      background: linear-gradient(155deg, rgba(15, 29, 56, 0.78) 0%, rgba(8, 16, 33, 0.86) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      box-shadow: 0 16px 38px -14px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .glass-panel-emerald {
+      background: linear-gradient(155deg, rgba(10, 35, 39, 0.78) 0%, rgba(7, 19, 34, 0.88) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(16, 185, 129, 0.26);
+      box-shadow: 0 16px 38px -14px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(167, 243, 208, 0.08);
+    }
+
+    .scanline-bar {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanline-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.18), transparent);
+      transform: translateX(-100%);
+      animation: scanSweep 5.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes scanSweep {
+      0% { transform: translateX(-100%); }
+      55%, 100% { transform: translateX(100%); }
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .status-pulse {
+      animation: pulseDot 2s infinite;
+    }
+
+    /* Custom scrollbar for ledger table */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 18, 36, 0.7);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(34, 211, 238, 0.25);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(34, 211, 238, 0.45);
+    }
+  </style>
+</head>
+<body class="holo-backdrop min-h-screen font-sans text-slate-100 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+  <!-- Top Network Status & Brand Header -->
+  <header class="sticky top-0 z-30 border-b border-cyan-400/15 bg-[#050914]/85 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-4 py-3.5 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Brand & Wallet Badge -->
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 shadow-cyanGlow">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" />
+                <path d="M12 22V12" />
+                <path d="M20 7L12 12L4 7" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold tracking-wide text-white sm:text-base" data-i18n="brandTitle">
+                  Mohaserei Network
+                </span>
+                <span class="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-cyan-300">
+                  MSN WALLET
+                </span>
+              </div>
+              <p class="text-xs text-slate-400" data-i18n="brandSubtitle">
+                Layer 2 Economic &amp; Contribution Portal
+              </p>
+            </div>
+          </div>
+
+          <!-- Active Wallet Address Pill -->
+          <button
+            type="button"
+            id="copyHeaderAddressBtn"
+            class="group flex items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-1.5 font-mono text-xs text-cyan-200 transition hover:border-cyan-400/50 hover:bg-slate-800/90"
+            title="Copy Wallet Address"
+          >
+            <span class="h-2 w-2 rounded-full bg-emerald-400 status-pulse"></span>
+            <span id="walletAddressDisplay">MSN-KH-8841-902A</span>
+            <svg class="h-3.5 w-3.5 text-slate-400 transition group-hover:text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Telemetry Badges + Language Switcher + Voice Synthesis -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <div class="hidden items-center gap-1.5 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1.5 text-xs md:flex">
+            <span class="text-emerald-300/80" data-i18n="uesBadgeLabel">UES Tier:</span>
+            <span id="headerUesTier" class="font-mono font-semibold text-emerald-300">SOVEREIGN IV</span>
+          </div>
+
+          <div class="hidden items-center gap-1.5 rounded-xl border border-amber-400/25 bg-amber-500/10 px-2.5 py-1.5 text-xs lg:flex">
+            <span class="text-amber-200/80" data-i18n="hcvBadgeLabel">HCV Rate:</span>
+            <span id="headerHcvMult" class="font-mono font-semibold text-amber-300">1.45x</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 rounded-xl border border-cyan-400/20 bg-slate-900/75 px-2.5 py-1.5 text-xs text-slate-300">
+            <span class="h-2 w-2 rounded-full bg-cyan-400 status-pulse"></span>
+            <span id="syncStatusText" class="font-mono text-[11px] text-cyan-300" data-i18n="syncSynced">SYNCED · 12ms</span>
+          </div>
+
+          <!-- Voice Announcement Button -->
+          <button
+            type="button"
+            id="voiceSpeakBtn"
+            class="flex items-center gap-1.5 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:border-cyan-300 hover:bg-cyan-500/20"
+          >
+            <svg class="h-4 w-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <span data-i18n="speakSummary">Voice</span>
+          </button>
+
+          <!-- Bilingual Switcher -->
+          <div class="flex items-center rounded-xl border border-slate-700/80 bg-slate-900/90 p-0.5 text-xs">
+            <button
+              type="button"
+              data-lang="en"
+              class="lang-btn rounded-lg px-2.5 py-1 font-medium transition"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              data-lang="km"
+              class="lang-btn rounded-lg px-2.5 py-1 font-medium transition"
+            >
+              ភាសាខ្មែរ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Banner (Non-blocking notification replacement for alert()) -->
+  <div
+    id="toastContainer"
+    class="pointer-events-none fixed bottom-5 right-5 z-50 flex max-w-sm flex-col gap-2"
+    aria-live="polite"
+  ></div>
+
+  <!-- Main Workspace -->
+  <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Portfolio & Balance Overview -->
+    <section aria-labelledby="portfolioHeading" class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 id="portfolioHeading" class="text-xl font-bold tracking-tight text-white sm:text-2xl" data-i18n="portfolioTitle">
+            Mohaserei Wallet Portfolio
+          </h1>
+          <p class="text-xs text-slate-400 sm:text-sm" data-i18n="portfolioSubtitle">
+            Real-time balances across MSN Coin, Human Contribution Value (HCV), and UES Settlement reserves.
+          </p>
+        </div>
+
+        <!-- Settlement Currency Toggle (USD / KHR) -->
+        <div class="flex items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/80 p-1 text-xs">
+          <span class="pl-2 text-slate-400" data-i18n="settlementUnit">Settlement:</span>
+          <button
+            type="button"
+            id="unitUsdBtn"
+            class="rounded-lg bg-cyan-500/20 px-2.5 py-1 font-mono font-semibold text-cyan-300 transition"
+          >
+            USD
+          </button>
+          <button
+            type="button"
+            id="unitKhrBtn"
+            class="rounded-lg px-2.5 py-1 font-mono font-semibold text-slate-400 transition hover:text-white"
+          >
+            KHR (៛)
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Primary Asset Cards -->
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <!-- MSN Coin Balance -->
+        <div class="glass-panel scanline-bar rounded-2xl p-5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-cyan-300" data-i18n="msnCoinLabel">
+              MSN Coin Balance
+            </span>
+            <span class="rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-2 py-0.5 font-mono text-[11px] text-cyan-200">
+              MSN
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between gap-2">
+            <div id="msnBalanceDisplay" class="font-mono text-2xl font-bold text-white sm:text-3xl">
+              14,820.50
+            </div>
+            <span class="rounded-full bg-emerald-500/15 px-2 py-0.5 font-mono text-xs text-emerald-300">
+              +6.4%
+            </span>
+          </div>
+          <p id="msnEquivDisplay" class="mt-1.5 font-mono text-xs text-slate-400">
+            ≈ $14,820.50 USD
+          </p>
+        </div>
+
+        <!-- HCV Balance -->
+        <div class="glass-panel-emerald scanline-bar rounded-2xl p-5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-300" data-i18n="hcvCreditsLabel">
+              Human Contribution Value
+            </span>
+            <span class="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] text-emerald-200">
+              HCV
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between gap-2">
+            <div id="hcvBalanceDisplay" class="font-mono text-2xl font-bold text-white sm:text-3xl">
+              4,390.00
+            </div>
+            <span class="rounded-full bg-cyan-500/15 px-2 py-0.5 font-mono text-xs text-cyan-300">
+              +18.5/day
+            </span>
+          </div>
+          <p id="hcvEquivDisplay" class="mt-1.5 font-mono text-xs text-slate-400">
+            ≈ $3,512.00 USD
+          </p>
+        </div>
+
+        <!-- UES Settlement Balance -->
+        <div class="glass-panel scanline-bar rounded-2xl p-5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-300" data-i18n="uesSettlementLabel">
+              UES Settlement Pool
+            </span>
+            <span id="settlementBadge" class="rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 font-mono text-[11px] text-amber-200">
+              USD
+            </span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between gap-2">
+            <div id="settlementBalanceDisplay" class="font-mono text-2xl font-bold text-white sm:text-3xl">
+              $18,332.50
+            </div>
+            <span class="rounded-full bg-amber-500/15 px-2 py-0.5 font-mono text-xs text-amber-300">
+              UES 842
+            </span>
+          </div>
+          <p id="settlementRateNote" class="mt-1.5 font-mono text-xs text-slate-400">
+            1 MSN = $1.00 · 1 HCV = $0.80
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Bar -->
+      <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <button
+          type="button"
+          data-panel="send"
+          class="action-tab-btn flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition sm:text-sm"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+          <span data-i18n="actionSend">Send / Transfer</span>
+        </button>
+
+        <button
+          type="button"
+          data-panel="receive"
+          class="action-tab-btn flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition sm:text-sm"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <path d="M3 14h7v7H3z" />
+          </svg>
+          <span data-i18n="actionReceive">Receive / QR</span>
+        </button>
+
+        <button
+          type="button"
+          data-panel="swap"
+          class="action-tab-btn flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition sm:text-sm"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 1l4 4-4 4" />
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" />
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+          </svg>
+          <span data-i18n="actionSwap">Swap / Convert</span>
+        </button>
+
+        <button
+          type="button"
+          data-panel="stake"
+          class="action-tab-btn flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition sm:text-sm"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span data-i18n="actionStake">Stake / Yield</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Interactive Grid: Left Action Panel + Right UES/HCV Economic Telemetry -->
+    <section class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <!-- Interactive Action Panels (7 cols) -->
+      <div class="glass-panel rounded-2xl p-5 sm:p-6 lg:col-span-7">
+        <!-- SEND PANEL -->
+        <div id="panel-send" class="action-panel space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="sendHeading">
+                Transfer Mohaserei Assets
+              </h2>
+              <p class="text-xs text-slate-400" data-i18n="sendDesc">
+                Instant zero-friction member transfer across the MSN Layer 2 network.
+              </p>
+            </div>
+            <span class="rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 font-mono text-xs text-cyan-300">
+              FEE: 0.1%
+            </span>
+          </div>
+
+          <form id="sendForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="recipientInput" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="recipientLabel">
+                  Recipient MSN ID or Handle
+                </label>
+                <input
+                  type="text"
+                  id="recipientInput"
+                  required
+                  placeholder="MSN-KH-3109-441C or @sopheak.msn"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="sendAssetSelect" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="assetLabel">
+                  Asset
+                </label>
+                <select
+                  id="sendAssetSelect"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                  <option value="MSN">MSN Coin (MSN)</option>
+                  <option value="HCV">Human Contribution Value (HCV)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <div class="mb-1.5 flex items-center justify-between text-xs">
+                  <label for="sendAmountInput" class="font-medium text-slate-300" data-i18n="amountLabel">
+                    Amount
+                  </label>
+                  <button type="button" id="maxSendBtn" class="font-mono text-cyan-300 hover:underline">
+                    MAX
+                  </button>
+                </div>
+                <input
+                  type="number"
+                  id="sendAmountInput"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  placeholder="100.00"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="sendMemoInput" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="memoLabel">
+                  Memo / Settlement Note
+                </label>
+                <input
+                  type="text"
+                  id="sendMemoInput"
+                  placeholder="Community coop settlement"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Fee & Net Preview Box -->
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 font-mono text-xs">
+              <div class="flex items-center justify-between text-slate-400">
+                <span data-i18n="networkFeeLabel">Estimated Network Fee (0.1%)</span>
+                <span id="sendFeePreview" class="text-slate-200">0.00 MSN</span>
+              </div>
+              <div class="mt-1.5 flex items-center justify-between border-t border-slate-800/80 pt-1.5 text-cyan-300">
+                <span data-i18n="totalDebitLabel">Total Wallet Debit</span>
+                <span id="sendTotalPreview" class="font-semibold">0.00 MSN</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-cyanGlow transition hover:brightness-110"
+              data-i18n="sendSubmitBtn"
+            >
+              Execute Transfer
+            </button>
+          </form>
+        </div>
+
+        <!-- RECEIVE PANEL -->
+        <div id="panel-receive" class="action-panel hidden space-y-5">
+          <div class="border-b border-slate-800 pb-3">
+            <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="receiveHeading">
+              Receive Mohaserei Funds
+            </h2>
+            <p class="text-xs text-slate-400" data-i18n="receiveDesc">
+              Share your MSN Wallet ID or scan the hologram matrix to receive MSN Coin or HCV credits.
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center gap-5 sm:flex-row">
+            <!-- Generated SVG Matrix QR -->
+            <div class="rounded-2xl border border-cyan-400/35 bg-slate-950 p-4 shadow-cyanGlow">
+              <svg id="qrMatrixSvg" width="144" height="144" viewBox="0 0 144 144" class="block">
+                <rect width="144" height="144" rx="12" fill="#040812" />
+                <g id="qrCells"></g>
+              </svg>
+            </div>
+
+            <div class="w-full flex-1 space-y-3">
+              <div>
+                <span class="text-xs font-medium text-slate-400" data-i18n="yourMsnAddress">
+                  Your Mohaserei Wallet Address
+                </span>
+                <div class="mt-1.5 flex items-center justify-between gap-2 rounded-xl border border-cyan-400/25 bg-slate-950/80 px-3.5 py-2.5 font-mono text-sm text-cyan-200">
+                  <span class="truncate">MSN-KH-8841-902A</span>
+                  <button
+                    type="button"
+                    id="copyReceiveAddrBtn"
+                    class="rounded-lg bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/25"
+                    data-i18n="copyBtn"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-xs text-slate-300">
+                <span class="font-semibold text-emerald-300" data-i18n="supportedAssetsLabel">Supported Assets:</span>
+                <span class="font-mono text-slate-200">MSN Coin, HCV Credits, UES Marketplace Vouchers</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SWAP PANEL -->
+        <div id="panel-swap" class="action-panel hidden space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="swapHeading">
+                Swap &amp; Convert Assets
+              </h2>
+              <p class="text-xs text-slate-400" data-i18n="swapDesc">
+                Convert between MSN Coin, HCV Credits, and UES Settlement units at transparent protocol rates.
+              </p>
+            </div>
+            <span class="font-mono text-xs text-emerald-300">1 MSN = 1.25 HCV</span>
+          </div>
+
+          <form id="swapForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="swapFromAsset" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="fromAssetLabel">
+                  From Asset
+                </label>
+                <select
+                  id="swapFromAsset"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                  <option value="MSN">MSN Coin (MSN)</option>
+                  <option value="HCV">Human Contribution Value (HCV)</option>
+                  <option value="UES">UES Settlement (USD eq.)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="swapToAsset" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="toAssetLabel">
+                  To Asset
+                </label>
+                <select
+                  id="swapToAsset"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                  <option value="HCV">Human Contribution Value (HCV)</option>
+                  <option value="MSN">MSN Coin (MSN)</option>
+                  <option value="UES">UES Settlement (USD eq.)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="swapAmountInput" class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="inputAmountLabel">
+                  Input Amount
+                </label>
+                <input
+                  type="number"
+                  id="swapAmountInput"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  value="250"
+                  class="w-full rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <span class="mb-1.5 block text-xs font-medium text-slate-300" data-i18n="estimatedOutputLabel">
+                  Estimated Output
+                </span>
+                <div
+                  id="swapEstimateDisplay"
+                  class="flex h-[42px] items-center rounded-xl border border-emerald-400/25 bg-slate-950/80 px-3.5 font-mono text-sm font-semibold text-emerald-300"
+                >
+                  312.50 HCV
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-4 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/25"
+              data-i18n="swapSubmitBtn"
+            >
+              Confirm Conversion
+            </button>
+          </form>
+        </div>
+
+        <!-- STAKE PANEL -->
+        <div id="panel-stake" class="action-panel hidden space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="stakeHeading">
+                Stake MSN &amp; Boost HCV Yield
+              </h2>
+              <p class="text-xs text-slate-400" data-i18n="stakeDesc">
+                Lock MSN liquidity into regional Mohaserei pools to earn daily HCV contribution rewards.
+              </p>
+            </div>
+            <span class="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-300">
+              APY 14.2%
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/65 p-3.5">
+              <div class="text-xs text-slate-400" data-i18n="currentlyStakedLabel">Currently Staked (MSN)</div>
+              <div id="stakedAmountDisplay" class="mt-1 font-mono text-lg font-bold text-cyan-300">2,500.00 MSN</div>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/65 p-3.5">
+              <div class="text-xs text-slate-400" data-i18n="accruedHcvLabel">Accrued Contribution Yield</div>
+              <div id="accruedHcvDisplay" class="mt-1 font-mono text-lg font-bold text-emerald-300">+148.20 HCV</div>
+            </div>
+          </div>
+
+          <form id="stakeForm" class="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="number"
+              id="stakeAmountInput"
+              step="10"
+              min="10"
+              required
+              placeholder="200"
+              class="flex-1 rounded-xl border border-slate-700/80 bg-slate-950/75 px-3.5 py-2.5 font-mono text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-emeraldGlow transition hover:brightness-110"
+              data-i18n="stakeSubmitBtn"
+            >
+              Stake MSN
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- UES & HCV Economic Telemetry Card (5 cols) -->
+      <aside class="glass-panel flex flex-col justify-between rounded-2xl p-5 sm:p-6 lg:col-span-5">
+        <div class="space-y-4">
+          <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <span class="font-mono text-[11px] uppercase tracking-wider text-cyan-300" data-i18n="telemetryEyebrow">
+                Economic Telemetry
+              </span>
+              <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="telemetryHeading">
+                UES &amp; HCV Multiplier Engine
+              </h2>
+            </div>
+            <span class="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-semibold text-emerald-300">
+              ACTIVE
+            </span>
+          </div>
+
+          <!-- UES Score Progress -->
+          <div class="space-y-2 rounded-xl border border-slate-800/90 bg-slate-950/60 p-4">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium text-slate-300" data-i18n="uesScoreLabel">Universal Economic Score (UES)</span>
+              <span id="uesScoreValue" class="font-mono text-sm font-bold text-cyan-300">842 / 1000</span>
+            </div>
+            <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div
+                id="uesProgressBar"
+                class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 transition-all duration-500"
+                style="width: 84.2%"
+              ></div>
+            </div>
+            <div class="flex items-center justify-between font-mono text-[11px] text-slate-400">
+              <span data-i18n="nextTierHint">Next Tier: SOVEREIGN V (900)</span>
+              <span>84.2%</span>
+            </div>
+          </div>
+
+          <!-- HCV & Profit Sharing Metrics -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl border border-slate-800/90 bg-slate-950/60 p-3.5">
+              <div class="text-[11px] text-slate-400" data-i18n="hcvVelocityLabel">HCV Earning Rate</div>
+              <div class="mt-1 font-mono text-base font-bold text-emerald-300">1.45x <span class="text-xs font-normal text-slate-400">mult</span></div>
+            </div>
+            <div class="rounded-xl border border-slate-800/90 bg-slate-950/60 p-3.5">
+              <div class="text-[11px] text-slate-400" data-i18n="profitShareLabel">Profit Share Pool</div>
+              <div class="mt-1 font-mono text-base font-bold text-amber-300">12.5% <span class="text-xs font-normal text-slate-400">cycle</span></div>
+            </div>
+          </div>
+
+          <!-- Formula Summary -->
+          <div class="rounded-xl border border-cyan-400/15 bg-cyan-950/20 p-3.5 text-xs text-slate-300">
+            <div class="font-mono text-[11px] font-semibold text-cyan-300" data-i18n="formulaTitle">
+              MSN Contribution Formula
+            </div>
+            <p class="mt-1 font-mono text-[11px] leading-relaxed text-slate-300/90">
+              HCV_delta = (Civic_Action + Merchant_Flow) × UES_Weight(0.842) × 1.45
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          id="boostContributionBtn"
+          class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20"
+          data-i18n="simulateContributionBtn"
+        >
+          <svg class="h-4 w-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>Record Verified Contribution (+15 HCV / +8 UES)</span>
+        </button>
+      </aside>
+    </section>
+
+    <!-- Recent Ledger & Activity Table -->
+    <section class="glass-panel rounded-2xl p-5 sm:p-6">
+      <div class="flex flex-col justify-between gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
+        <div>
+          <h2 class="text-base font-bold text-white sm:text-lg" data-i18n="ledgerHeading">
+            Recent Ledger &amp; Activity
+          </h2>
+          <p class="text-xs text-slate-400" data-i18n="ledgerDesc">
+            Filterable Mohaserei Layer 2 settlements, transfers, and contribution rewards.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Category Filter Pills -->
+          <div class="flex flex-wrap items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/75 p-1 text-xs">
+            <button type="button" data-filter="ALL" class="ledger-filter-btn rounded-lg px-2.5 py-1 font-medium transition" data-i18n="filterAll">
+              All
+            </button>
+            <button type="button" data-filter="TRANSFER" class="ledger-filter-btn rounded-lg px-2.5 py-1 font-medium transition" data-i18n="filterTransfers">
+              Transfers
+            </button>
+            <button type="button" data-filter="REWARD" class="ledger-filter-btn rounded-lg px-2.5 py-1 font-medium transition" data-i18n="filterRewards">
+              Rewards / HCV
+            </button>
+            <button type="button" data-filter="MARKETPLACE" class="ledger-filter-btn rounded-lg px-2.5 py-1 font-medium transition" data-i18n="filterMarketplace">
+              Marketplace
+            </button>
+          </div>
+
+          <button
+            type="button"
+            id="addDemoSettlementBtn"
+            class="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/20"
+            data-i18n="addDemoSettlement"
+          >
+            + Demo Settlement
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full min-w-[640px] border-collapse text-left text-xs sm:text-sm">
+          <thead>
+            <tr class="border-b border-slate-800 font-mono text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="px-3 py-2.5" data-i18n="colType">Type</th>
+              <th class="px-3 py-2.5" data-i18n="colCounterparty">Counterparty / Source</th>
+              <th class="px-3 py-2.5" data-i18n="colTime">Timestamp</th>
+              <th class="px-3 py-2.5" data-i18n="colStatus">Status</th>
+              <th class="px-3 py-2.5 text-right" data-i18n="colAmount">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerTableBody" class="divide-y divide-slate-800/70">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Transaction Detail Modal -->
+  <div
+    id="txModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="txModalTitle"
+  >
+    <div class="glass-panel w-full max-w-md rounded-2xl p-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="txModalTitle" class="text-base font-bold text-white" data-i18n="txReceiptTitle">
+          Mohaserei Ledger Receipt
+        </h3>
+        <button
+          type="button"
+          id="closeTxModalBtn"
+          class="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+          aria-label="Close modal"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div id="txModalBody" class="mt-4 space-y-2.5 font-mono text-xs text-slate-300">
+        <!-- Populated on click -->
+      </div>
+      <div class="mt-5 flex justify-end">
+        <button
+          type="button"
+          id="doneTxModalBtn"
+          class="rounded-xl bg-cyan-500/20 px-4 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/30"
+          data-i18n="closeBtn"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'mohaserei_wallet_portal_state_v1';
+      const KHR_PER_USD = 4060;
+
+      const TRANSLATIONS = {
+        en: {
+          brandTitle: 'Mohaserei Network',
+          brandSubtitle: 'Layer 2 Economic & Contribution Portal',
+          uesBadgeLabel: 'UES Tier:',
+          hcvBadgeLabel: 'HCV Rate:',
+          syncSynced: 'SYNCED · 12ms',
+          speakSummary: 'Voice',
+          portfolioTitle: 'Mohaserei Wallet Portfolio',
+          portfolioSubtitle: 'Real-time balances across MSN Coin, Human Contribution Value (HCV), and UES Settlement reserves.',
+          settlementUnit: 'Settlement:',
+          msnCoinLabel: 'MSN Coin Balance',
+          hcvCreditsLabel: 'Human Contribution Value',
+          uesSettlementLabel: 'UES Settlement Pool',
+          actionSend: 'Send / Transfer',
+          actionReceive: 'Receive / QR',
+          actionSwap: 'Swap / Convert',
+          actionStake: 'Stake / Yield',
+          sendHeading: 'Transfer Mohaserei Assets',
+          sendDesc: 'Instant zero-friction member transfer across the MSN Layer 2 network.',
+          recipientLabel: 'Recipient MSN ID or Handle',
+          assetLabel: 'Asset',
+          amountLabel: 'Amount',
+          memoLabel: 'Memo / Settlement Note',
+          networkFeeLabel: 'Estimated Network Fee (0.1%)',
+          totalDebitLabel: 'Total Wallet Debit',
+          sendSubmitBtn: 'Execute Transfer',
+          receiveHeading: 'Receive Mohaserei Funds',
+          receiveDesc: 'Share your MSN Wallet ID or scan the hologram matrix to receive MSN Coin or HCV credits.',
+          yourMsnAddress: 'Your Mohaserei Wallet Address',
+          copyBtn: 'Copy',
+          supportedAssetsLabel: 'Supported Assets:',
+          swapHeading: 'Swap & Convert Assets',
+          swapDesc: 'Convert between MSN Coin, HCV Credits, and UES Settlement units at transparent protocol rates.',
+          fromAssetLabel: 'From Asset',
+          toAssetLabel: 'To Asset',
+          inputAmountLabel: 'Input Amount',
+          estimatedOutputLabel: 'Estimated Output',
+          swapSubmitBtn: 'Confirm Conversion',
+          stakeHeading: 'Stake MSN & Boost HCV Yield',
+          stakeDesc: 'Lock MSN liquidity into regional Mohaserei pools to earn daily HCV contribution rewards.',
+          currentlyStakedLabel: 'Currently Staked (MSN)',
+          accruedHcvLabel: 'Accrued Contribution Yield',
+          stakeSubmitBtn: 'Stake MSN',
+          telemetryEyebrow: 'Economic Telemetry',
+          telemetryHeading: 'UES & HCV Multiplier Engine',
+          uesScoreLabel: 'Universal Economic Score (UES)',
+          nextTierHint: 'Next Tier: SOVEREIGN V (900)',
+          hcvVelocityLabel: 'HCV Earning Rate',
+          profitShareLabel: 'Profit Share Pool',
+          formulaTitle: 'MSN Contribution Formula',
+          simulateContributionBtn: 'Record Verified Contribution (+15 HCV / +8 UES)',
+          ledgerHeading: 'Recent Ledger & Activity',
+          ledgerDesc: 'Filterable Mohaserei Layer 2 settlements, transfers, and contribution rewards.',
+          filterAll: 'All',
+          filterTransfers: 'Transfers',
+          filterRewards: 'Rewards / HCV',
+          filterMarketplace: 'Marketplace',
+          addDemoSettlement: '+ Demo Settlement',
+          colType: 'Type',
+          colCounterparty: 'Counterparty / Source',
+          colTime: 'Timestamp',
+          colStatus: 'Status',
+          colAmount: 'Amount',
+          txReceiptTitle: 'Mohaserei Ledger Receipt',
+          closeBtn: 'Close',
+        },
+        km: {
+          brandTitle: 'បណ្តាញមហាសេរី',
+          brandSubtitle: 'វិបផតថលសេដ្ឋកិច្ច និងតម្លៃរួមចំណែក MSN',
+          uesBadgeLabel: 'កម្រិត UES:',
+          hcvBadgeLabel: 'អត្រា HCV:',
+          syncSynced: 'ធ្វើសមកាលកម្ម · 12ms',
+          speakSummary: 'សំឡេង',
+          portfolioTitle: 'ផលប័ត្រកាបូបមហាសេរី',
+          portfolioSubtitle: 'សមតុល្យជាក់ស្តែងសម្រាប់ MSN Coin, តម្លៃរួមចំណែកមនុស្ស (HCV) និងទុនទូទាត់ UES។',
+          settlementUnit: 'រូបិយប័ណ្ណ៖',
+          msnCoinLabel: 'សមតុល្យ MSN Coin',
+          hcvCreditsLabel: 'តម្លៃរួមចំណែកមនុស្ស',
+          uesSettlementLabel: 'មូលនិធិទូទាត់ UES',
+          actionSend: 'ផ្ញើ / ផ្ទេរ',
+          actionReceive: 'ទទួល / QR',
+          actionSwap: 'ប្តូរប្រាក់',
+          actionStake: 'តម្កល់ / ផល',
+          sendHeading: 'ផ្ទេរទ្រព្យសកម្មមហាសេរី',
+          sendDesc: 'ផ្ទេរភ្លាមៗរវាងសមាជិកលើបណ្តាញ MSN Layer 2។',
+          recipientLabel: 'អត្តសញ្ញាណ MSN ឬឈ្មោះអ្នកទទួល',
+          assetLabel: 'ប្រភេទទ្រព្យសកម្ម',
+          amountLabel: 'ចំនួន',
+          memoLabel: 'កំណត់ចំណាំ',
+          networkFeeLabel: 'ថ្លៃសេវាបណ្តាញ (0.1%)',
+          totalDebitLabel: 'សរុបកាត់ពីកាបូប',
+          sendSubmitBtn: 'អនុវត្តការផ្ទេរ',
+          receiveHeading: 'ទទួលមូលនិធិមហាសេរី',
+          receiveDesc: 'ចែករំលែកអាសយដ្ឋាន MSN ឬស្កេន QR ដើម្បីទទួល MSN Coin ឬ HCV។',
+          yourMsnAddress: 'អាសយដ្ឋានកាបូបមហាសេរីរបស់អ្នក',
+          copyBtn: 'ចម្លង',
+          supportedAssetsLabel: 'ទ្រព្យសកម្មដែលគាំទ្រ៖',
+          swapHeading: 'ប្តូរ និងគណនាទ្រព្យសកម្ម',
+          swapDesc: 'ប្តូររវាង MSN Coin, HCV និងឯកតាទូទាត់ UES តាមអត្រាប្រព័ន្ធ។',
+          fromAssetLabel: 'ពីទ្រព្យសកម្ម',
+          toAssetLabel: 'ទៅទ្រព្យសកម្ម',
+          inputAmountLabel: 'ចំនួនបញ្ចូល',
+          estimatedOutputLabel: 'លទ្ធផលប៉ាន់ស្មាន',
+          swapSubmitBtn: 'បញ្ជាក់ការប្តូរ',
+          stakeHeading: 'តម្កល់ MSN និងបង្កើនផល HCV',
+          stakeDesc: 'តម្កល់ MSN ក្នុងមូលនិធិមហាសេរីដើម្បីទទួលបានរង្វាន់ HCV ប្រចាំថ្ងៃ។',
+          currentlyStakedLabel: 'បានតម្កល់បច្ចុប្បន្ន (MSN)',
+          accruedHcvLabel: 'ផលរួមចំណែកដែលប្រមូលបាន',
+          stakeSubmitBtn: 'តម្កល់ MSN',
+          telemetryEyebrow: 'ទិន្នន័យសេដ្ឋកិច្ច',
+          telemetryHeading: 'ម៉ាស៊ីនគណនា UES និង HCV',
+          uesScoreLabel: 'ពិន្ទុសេដ្ឋកិច្ចសកល (UES)',
+          nextTierHint: 'កម្រិតបន្ទាប់៖ SOVEREIGN V (900)',
+          hcvVelocityLabel: 'អត្រាទទួល HCV',
+          profitShareLabel: 'ចំណែកប្រាក់ចំណេញ',
+          formulaTitle: 'រូបមន្តរួមចំណែក MSN',
+          simulateContributionBtn: 'កត់ត្រាការរួមចំណែក (+15 HCV / +8 UES)',
+          ledgerHeading: 'បញ្ជីកត់ត្រា និងសកម្មភាពថ្មីៗ',
+          ledgerDesc: 'ប្រវត្តិទូទាត់ ការផ្ទេរ និងរង្វាន់លើបណ្តាញមហាសេរី។',
+          filterAll: 'ទាំងអស់',
+          filterTransfers: 'ការផ្ទេរ',
+          filterRewards: 'រង្វាន់ / HCV',
+          filterMarketplace: 'ផ្សារ MSN',
+          addDemoSettlement: '+ ទូទាត់គំរូ',
+          colType: 'ប្រភេទ',
+          colCounterparty: 'ភាគី / ប្រភព',
+          colTime: 'ពេលវេលា',
+          colStatus: 'ស្ថានភាព',
+          colAmount: 'ចំនួន',
+          txReceiptTitle: 'វិក្កយបត្របញ្ជីមហាសេរី',
+          closeBtn: 'បិទ',
+        },
+      };
+
+      const DEFAULT_STATE = {
+        lang: 'en',
+        unit: 'USD',
+        activePanel: 'send',
+        ledgerFilter: 'ALL',
+        walletAddress: 'MSN-KH-8841-902A',
+        msnBalance: 14820.5,
+        hcvBalance: 4390.0,
+        stakedMsn: 2500.0,
+        accruedHcv: 148.2,
+        uesScore: 842,
+        hcvMultiplier: 1.45,
+        transactions: [
+          {
+            id: 'MSN-TX-90418',
+            category: 'REWARD',
+            typeLabel: 'HCV Contribution Reward',
+            counterparty: 'Siem Reap Civic Guild',
+            timestamp: '2026-11-20 13:45',
+            status: 'SETTLED',
+            amount: 34.5,
+            asset: 'HCV',
+            direction: '+',
+            memo: 'Community digital literacy session verified',
+          },
+          {
+            id: 'MSN-TX-90412',
+            category: 'MARKETPLACE',
+            typeLabel: 'MSN Marketplace Order',
+            counterparty: 'Kampot Pepper Co-op (@kampot.msn)',
+            timestamp: '2026-11-20 11:18',
+            status: 'SETTLED',
+            amount: 128.0,
+            asset: 'MSN',
+            direction: '-',
+            memo: 'Direct farm-to-member order #KM-402',
+          },
+          {
+            id: 'MSN-TX-90399',
+            category: 'TRANSFER',
+            typeLabel: 'Member Transfer',
+            counterparty: 'MSN-KH-5520-118D',
+            timestamp: '2026-11-19 18:02',
+            status: 'SETTLED',
+            amount: 250.0,
+            asset: 'MSN',
+            direction: '-',
+            memo: 'Regional logistics advance',
+          },
+          {
+            id: 'MSN-TX-90375',
+            category: 'REWARD',
+            typeLabel: 'Pool Profit Share',
+            counterparty: 'Mohaserei Commons Pool',
+            timestamp: '2026-11-19 09:00',
+            status: 'SETTLED',
+            amount: 62.75,
+            asset: 'MSN',
+            direction: '+',
+            memo: 'Bi-weekly UES dividend distribution',
+          },
+        ],
+      };
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return structuredClone(DEFAULT_STATE);
+          const parsed = JSON.parse(raw);
+          return {
+            ...structuredClone(DEFAULT_STATE),
+            ...parsed,
+            transactions: Array.isArray(parsed.transactions) && parsed.transactions.length
+              ? parsed.transactions
+              : structuredClone(DEFAULT_STATE.transactions),
+          };
+        } catch (err) {
+          console.warn('Failed to load Mohaserei wallet state:', err);
+          return structuredClone(DEFAULT_STATE);
+        }
+      }
+
+      let state = loadState();
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.warn('Failed to persist Mohaserei wallet state:', err);
+        }
+      }
+
+      function showToast(message, tone = 'cyan') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const toneClasses =
+          tone === 'emerald'
+            ? 'border-emerald-400/40 bg-emerald-950/90 text-emerald-200'
+            : tone === 'rose'
+            ? 'border-rose-400/40 bg-rose-950/90 text-rose-200'
+            : 'border-cyan-400/40 bg-slate-900/95 text-cyan-100';
+
+        toast.className = `pointer-events-auto rounded-xl border px-4 py-3 text-xs font-medium shadow-xl backdrop-blur-md transition duration-300 ${toneClasses}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(6px)';
+          setTimeout(() => toast.remove(), 250);
+        }, 3200);
+      }
+
+      function copyToClipboard(text) {
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(
+            () => showToast(`Copied ${text}`, 'cyan'),
+            () => fallbackCopy(text)
+          );
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        try {
+          const temp = document.createElement('textarea');
+          temp.value = text;
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand('copy');
+          document.body.removeChild(temp);
+          showToast(`Copied ${text}`, 'cyan');
+        } catch (err) {
+          showToast('Copy unavailable in this browser context', 'rose');
+        }
+      }
+
+      function formatNumber(num, decimals = 2) {
+        return Number(num || 0).toLocaleString('en-US', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        });
+      }
+
+      function formatSettlementValue(usdValue) {
+        if (state.unit === 'KHR') {
+          return `៛${Math.round(usdValue * KHR_PER_USD).toLocaleString('en-US')}`;
+        }
+        return `$${formatNumber(usdValue, 2)} USD`;
+      }
+
+      function getUesTierLabel(score) {
+        if (score >= 900) return 'SOVEREIGN V';
+        if (score >= 800) return 'SOVEREIGN IV';
+        if (score >= 650) return 'BUILDER III';
+        return 'MEMBER II';
+      }
+
+      function renderQrMatrix() {
+        const container = document.getElementById('qrCells');
+        if (!container) return;
+        container.innerHTML = '';
+        const seedStr = state.walletAddress;
+        let hash = 2166136261;
+        for (let i = 0; i < seedStr.length; i++) {
+          hash ^= seedStr.charCodeAt(i);
+          hash = Math.imul(hash, 16777619);
+        }
+
+        const gridSize = 15;
+        const cellSize = 7;
+        const offset = 19.5;
+
+        for (let r = 0; r < gridSize; r++) {
+          for (let c = 0; c < gridSize; c++) {
+            const isFinder =
+              (r < 3 && c < 3) ||
+              (r < 3 && c >= gridSize - 3) ||
+              (r >= gridSize - 3 && c < 3);
+
+            let active = false;
+            if (isFinder) {
+              const lr = r >= gridSize - 3 ? r - (gridSize - 3) : r;
+              const lc = c >= gridSize - 3 ? c - (gridSize - 3) : c;
+              active = lr === 0 || lr === 2 || lc === 0 || lc === 2 || (lr === 1 && lc === 1);
+            } else {
+              const bitIdx = (r * gridSize + c) % 31;
+              active = (((hash >>> bitIdx) ^ (r * 7 + c * 13)) & 1) === 1;
+            }
+
+            if (active) {
+              const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              rect.setAttribute('x', (offset + c * cellSize).toFixed(1));
+              rect.setAttribute('y', (offset + r * cellSize).toFixed(1));
+              rect.setAttribute('width', (cellSize - 1).toFixed(1));
+              rect.setAttribute('height', (cellSize - 1).toFixed(1));
+              rect.setAttribute('rx', '1.2');
+              rect.setAttribute('fill', isFinder ? '#22d3ee' : '#34d399');
+              container.appendChild(rect);
+            }
+          }
+        }
+      }
+
+      function applyTranslations() {
+        const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+        document.documentElement.lang = state.lang === 'km' ? 'km' : 'en';
+
+        document.querySelectorAll('[data-i18n]').forEach((el) => {
+          const key = el.getAttribute('data-i18n');
+          if (dict[key]) {
+            el.textContent = dict[key];
+          }
+        });
+
+        document.querySelectorAll('.lang-btn').forEach((btn) => {
+          const isActive = btn.getAttribute('data-lang') === state.lang;
+          btn.className = `lang-btn rounded-lg px-2.5 py-1 font-medium transition ${
+            isActive
+              ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/40'
+              : 'text-slate-400 hover:text-white border border-transparent'
+          }`;
+        });
+      }
+
+      function renderPortfolio() {
+        const msnUsd = state.msnBalance * 1.0;
+        const hcvUsd = state.hcvBalance * 0.8;
+        const totalUsd = msnUsd + hcvUsd;
+
+        document.getElementById('walletAddressDisplay').textContent = state.walletAddress;
+        document.getElementById('headerUesTier').textContent = getUesTierLabel(state.uesScore);
+        document.getElementById('headerHcvMult').textContent = `${state.hcvMultiplier.toFixed(2)}x`;
+
+        document.getElementById('msnBalanceDisplay').textContent = formatNumber(state.msnBalance, 2);
+        document.getElementById('msnEquivDisplay').textContent = `≈ ${formatSettlementValue(msnUsd)}`;
+
+        document.getElementById('hcvBalanceDisplay').textContent = formatNumber(state.hcvBalance, 2);
+        document.getElementById('hcvEquivDisplay').textContent = `≈ ${formatSettlementValue(hcvUsd)}`;
+
+        document.getElementById('settlementBadge').textContent = state.unit;
+        document.getElementById('settlementBalanceDisplay').textContent = formatSettlementValue(totalUsd);
+        document.getElementById('settlementRateNote').textContent =
+          state.unit === 'KHR'
+            ? `1 USD ≈ ${KHR_PER_USD.toLocaleString('en-US')} ៛ · 1 HCV = $0.80`
+            : '1 MSN = $1.00 · 1 HCV = $0.80';
+
+        // Unit toggle styles
+        const usdBtn = document.getElementById('unitUsdBtn');
+        const khrBtn = document.getElementById('unitKhrBtn');
+        if (state.unit === 'USD') {
+          usdBtn.className = 'rounded-lg bg-cyan-500/20 px-2.5 py-1 font-mono font-semibold text-cyan-300 transition';
+          khrBtn.className = 'rounded-lg px-2.5 py-1 font-mono font-semibold text-slate-400 transition hover:text-white';
+        } else {
+          khrBtn.className = 'rounded-lg bg-emerald-500/20 px-2.5 py-1 font-mono font-semibold text-emerald-300 transition';
+          usdBtn.className = 'rounded-lg px-2.5 py-1 font-mono font-semibold text-slate-400 transition hover:text-white';
+        }
+
+        // UES & Stake displays
+        const cappedScore = Math.min(1000, Math.max(0, state.uesScore));
+        const pct = ((cappedScore / 1000) * 100).toFixed(1);
+        document.getElementById('uesScoreValue').textContent = `${cappedScore} / 1000`;
+        document.getElementById('uesProgressBar').style.width = `${pct}%`;
+        document.getElementById('stakedAmountDisplay').textContent = `${formatNumber(state.stakedMsn, 2)} MSN`;
+        document.getElementById('accruedHcvDisplay').textContent = `+${formatNumber(state.accruedHcv, 2)} HCV`;
+      }
+
+      function renderActionPanels() {
+        document.querySelectorAll('.action-panel').forEach((panel) => {
+          panel.classList.toggle('hidden', panel.id !== `panel-${state.activePanel}`);
+        });
+
+        document.querySelectorAll('.action-tab-btn').forEach((btn) => {
+          const isSelected = btn.getAttribute('data-panel') === state.activePanel;
+          btn.className = `action-tab-btn flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition sm:text-sm ${
+            isSelected
+              ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-200 shadow-cyanGlow'
+              : 'border-slate-800 bg-slate-900/75 text-slate-300 hover:border-cyan-400/30 hover:text-white'
+          }`;
+        });
+      }
+
+      function updateSendFeePreview() {
+        const amt = parseFloat(document.getElementById('sendAmountInput').value) || 0;
+        const asset = document.getElementById('sendAssetSelect').value;
+        const fee = amt * 0.001;
+        const total = amt + fee;
+        document.getElementById('sendFeePreview').textContent = `${formatNumber(fee, 4)} ${asset}`;
+        document.getElementById('sendTotalPreview').textContent = `${formatNumber(total, 4)} ${asset}`;
+      }
+
+      function updateSwapEstimate() {
+        const from = document.getElementById('swapFromAsset').value;
+        const to = document.getElementById('swapToAsset').value;
+        const amt = parseFloat(document.getElementById('swapAmountInput').value) || 0;
+
+        // Value in USD baseline: MSN = 1.0, HCV = 0.8, UES = 1.0
+        const rateToUsd = { MSN: 1.0, HCV: 0.8, UES: 1.0 };
+        const usdVal = amt * (rateToUsd[from] || 1);
+        const converted = usdVal / (rateToUsd[to] || 1);
+
+        document.getElementById('swapEstimateDisplay').textContent = `${formatNumber(converted, 2)} ${to}`;
+      }
+
+      function renderLedger() {
+        const tbody = document.getElementById('ledgerTableBody');
+        if (!tbody) return;
+
+        document.querySelectorAll('.ledger-filter-btn').forEach((btn) => {
+          const isActive = btn.getAttribute('data-filter') === state.ledgerFilter;
+          btn.className = `ledger-filter-btn rounded-lg px-2.5 py-1 font-medium transition ${
+            isActive
+              ? 'bg-cyan-500/25 text-cyan-200'
+              : 'text-slate-400 hover:text-white'
+          }`;
+        });
+
+        const filtered = state.transactions.filter((tx) => {
+          if (state.ledgerFilter === 'ALL') return true;
+          return tx.category === state.ledgerFilter;
+        });
+
+        tbody.innerHTML = '';
+
+        if (!filtered.length) {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td colspan="5" class="px-3 py-6 text-center text-xs text-slate-400">No transactions match this filter.</td>`;
+          tbody.appendChild(row);
+          return;
+        }
+
+        filtered.forEach((tx) => {
+          const tr = document.createElement('tr');
+          tr.className = 'cursor-pointer transition hover:bg-cyan-500/5';
+          tr.addEventListener('click', () => openTxModal(tx));
+
+          const isPositive = tx.direction === '+';
+          const amtClass = isPositive ? 'text-emerald-300' : 'text-cyan-200';
+          const badgeTone =
+            tx.category === 'REWARD'
+              ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+              : tx.category === 'MARKETPLACE'
+              ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
+              : 'border-cyan-400/30 bg-cyan-500/10 text-cyan-300';
+
+          tr.innerHTML = `
+            <td class="px-3 py-3">
+              <span class="inline-block rounded-md border px-2 py-0.5 font-mono text-[11px] ${badgeTone}">
+                ${tx.typeLabel}
+              </span>
+            </td>
+            <td class="px-3 py-3 font-medium text-slate-200">${tx.counterparty}</td>
+            <td class="px-3 py-3 font-mono text-xs text-slate-400">${tx.timestamp}</td>
+            <td class="px-3 py-3">
+              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 font-mono text-[11px] text-emerald-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                ${tx.status}
+              </span>
+            </td>
+            <td class="px-3 py-3 text-right font-mono font-semibold ${amtClass}">
+              ${tx.direction}${formatNumber(tx.amount, 2)} ${tx.asset}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function openTxModal(tx) {
+        const modal = document.getElementById('txModal');
+        const body = document.getElementById('txModalBody');
+        if (!modal || !body || !tx) return;
+
+        body.innerHTML = `
+          <div class="flex justify-between border-b border-slate-800/80 pb-2">
+            <span class="text-slate-400">TX ID</span>
+            <span class="text-cyan-300">${tx.id}</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2">
+            <span class="text-slate-400">Category</span>
+            <span class="text-white">${tx.typeLabel}</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2">
+            <span class="text-slate-400">Counterparty</span>
+            <span class="text-right text-slate-200">${tx.counterparty}</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2">
+            <span class="text-slate-400">Amount</span>
+            <span class="font-bold text-emerald-300">${tx.direction}${formatNumber(tx.amount, 2)} ${tx.asset}</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800/80 pb-2">
+            <span class="text-slate-400">Timestamp</span>
+            <span class="text-slate-300">${tx.timestamp}</span>
+          </div>
+          <div>
+            <span class="block text-slate-400">Memo</span>
+            <p class="mt-1 rounded-lg bg-slate-950/80 p-2.5 text-slate-200">${tx.memo || '—'}</p>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      function closeTxModal() {
+        const modal = document.getElementById('txModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      function nowStamp() {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      function speakWalletSummary() {
+        if (!('speechSynthesis' in window)) {
+          showToast('Speech synthesis is not supported in this browser.', 'rose');
+          return;
+        }
+        window.speechSynthesis.cancel();
+
+        const summaryText =
+          state.lang === 'km'
+            ? `កាបូបមហាសេរី MSN មានសមតុល្យ ${formatNumber(state.msnBalance, 0)} MSN Coin និង ${formatNumber(state.hcvBalance, 0)} HCV។ ពិន្ទុ UES គឺ ${state.uesScore}។`
+            : `Mohaserei wallet balance is ${formatNumber(state.msnBalance, 2)} MSN Coin and ${formatNumber(state.hcvBalance, 2)} HCV credits. Universal Economic Score is ${state.uesScore}.`;
+
+        const utterance = new SpeechSynthesisUtterance(summaryText);
+        utterance.lang = state.lang === 'km' ? 'km-KH' : 'en-US';
+        utterance.rate = 0.98;
+        window.speechSynthesis.speak(utterance);
+        showToast(state.lang === 'km' ? 'កំពុងអានសេចក្តីសង្ខេប...' : 'Speaking wallet summary...', 'cyan');
+      }
+
+      function bindEvents() {
+        // Language switcher
+        document.querySelectorAll('.lang-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.lang = btn.getAttribute('data-lang');
+            saveState();
+            applyTranslations();
+          });
+        });
+
+        // Voice button
+        document.getElementById('voiceSpeakBtn').addEventListener('click', speakWalletSummary);
+
+        // Copy wallet address buttons
+        document.getElementById('copyHeaderAddressBtn').addEventListener('click', () => copyToClipboard(state.walletAddress));
+        document.getElementById('copyReceiveAddrBtn').addEventListener('click', () => copyToClipboard(state.walletAddress));
+
+        // Unit toggle USD / KHR
+        document.getElementById('unitUsdBtn').addEventListener('click', () => {
+          state.unit = 'USD';
+          saveState();
+          renderPortfolio();
+        });
+        document.getElementById('unitKhrBtn').addEventListener('click', () => {
+          state.unit = 'KHR';
+          saveState();
+          renderPortfolio();
+        });
+
+        // Action panel tabs
+        document.querySelectorAll('.action-tab-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.activePanel = btn.getAttribute('data-panel');
+            saveState();
+            renderActionPanels();
+          });
+        });
+
+        // Send preview & submission
+        document.getElementById('sendAmountInput').addEventListener('input', updateSendFeePreview);
+        document.getElementById('sendAssetSelect').addEventListener('change', updateSendFeePreview);
+
+        document.getElementById('maxSendBtn').addEventListener('click', () => {
+          const asset = document.getElementById('sendAssetSelect').value;
+          const avail = asset === 'HCV' ? state.hcvBalance : state.msnBalance;
+          const maxAmt = Math.max(0, Number((avail / 1.001).toFixed(2)));
+          document.getElementById('sendAmountInput').value = maxAmt.toFixed(2);
+          updateSendFeePreview();
+        });
+
+        document.getElementById('sendForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const recipient = document.getElementById('recipientInput').value.trim();
+          const asset = document.getElementById('sendAssetSelect').value;
+          const amount = parseFloat(document.getElementById('sendAmountInput').value);
+          const memo = document.getElementById('sendMemoInput').value.trim() || 'Mohaserei Layer 2 transfer';
+
+          if (!recipient || isNaN(amount) || amount <= 0) {
+            showToast('Enter a valid recipient and positive amount.', 'rose');
+            return;
+          }
+
+          const totalDebit = amount * 1.001;
+          if (asset === 'MSN') {
+            if (totalDebit > state.msnBalance) {
+              showToast('Insufficient MSN Coin balance.', 'rose');
+              return;
+            }
+            state.msnBalance = Number((state.msnBalance - totalDebit).toFixed(4));
+          } else {
+            if (totalDebit > state.hcvBalance) {
+              showToast('Insufficient HCV balance.', 'rose');
+              return;
+            }
+            state.hcvBalance = Number((state.hcvBalance - totalDebit).toFixed(4));
+          }
+
+          const newTx = {
+            id: `MSN-TX-${Math.floor(10000 + Math.random() * 90000)}`,
+            category: 'TRANSFER',
+            typeLabel: 'Member Transfer',
+            counterparty: recipient,
+            timestamp: nowStamp(),
+            status: 'SETTLED',
+            amount,
+            asset,
+            direction: '-',
+            memo,
+          };
+
+          state.transactions.unshift(newTx);
+          saveState();
+          renderPortfolio();
+          renderLedger();
+          document.getElementById('sendForm').reset();
+          updateSendFeePreview();
+          showToast(`Sent ${formatNumber(amount, 2)} ${asset} to ${recipient}`, 'emerald');
+        });
+
+        // Swap preview & submission
+        document.getElementById('swapFromAsset').addEventListener('change', updateSwapEstimate);
+        document.getElementById('swapToAsset').addEventListener('change', updateSwapEstimate);
+        document.getElementById('swapAmountInput').addEventListener('input', updateSwapEstimate);
+
+        document.getElementById('swapForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const from = document.getElementById('swapFromAsset').value;
+          const to = document.getElementById('swapToAsset').value;
+          const amt = parseFloat(document.getElementById('swapAmountInput').value);
+
+          if (isNaN(amt) || amt <= 0) {
+            showToast('Enter a valid conversion amount.', 'rose');
+            return;
+          }
+          if (from === to) {
+            showToast('Select two different assets to convert.', 'rose');
+            return;
+          }
+          if (from === 'MSN' && amt > state.msnBalance) {
+            showToast('Insufficient MSN balance to swap.', 'rose');
+            return;
+          }
+          if (from === 'HCV' && amt > state.hcvBalance) {
+            showToast('Insufficient HCV balance to swap.', 'rose');
+            return;
+          }
+
+          const rateToUsd = { MSN: 1.0, HCV: 0.8, UES: 1.0 };
+          const converted = (amt * rateToUsd[from]) / rateToUsd[to];
+
+          if (from === 'MSN') state.msnBalance = Number((state.msnBalance - amt).toFixed(4));
+          if (from === 'HCV') state.hcvBalance = Number((state.hcvBalance - amt).toFixed(4));
+
+          if (to === 'MSN') state.msnBalance = Number((state.msnBalance + converted).toFixed(4));
+          if (to === 'HCV') state.hcvBalance = Number((state.hcvBalance + converted).toFixed(4));
+
+          state.transactions.unshift({
+            id: `MSN-SW-${Math.floor(10000 + Math.random() * 90000)}`,
+            category: 'TRANSFER',
+            typeLabel: 'Asset Conversion',
+            counterparty: `${from} → ${to} Protocol Pool`,
+            timestamp: nowStamp(),
+            status: 'SETTLED',
+            amount: Number(converted.toFixed(2)),
+            asset: to,
+            direction: '+',
+            memo: `Converted ${formatNumber(amt, 2)} ${from} to ${formatNumber(converted, 2)} ${to}`,
+          });
+
+          saveState();
+          renderPortfolio();
+          renderLedger();
+          showToast(`Converted ${formatNumber(amt, 2)} ${from} → ${formatNumber(converted, 2)} ${to}`, 'cyan');
+        });
+
+        // Stake submission
+        document.getElementById('stakeForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const stakeAmt = parseFloat(document.getElementById('stakeAmountInput').value);
+          if (isNaN(stakeAmt) || stakeAmt <= 0) {
+            showToast('Enter a valid staking amount.', 'rose');
+            return;
+          }
+          if (stakeAmt > state.msnBalance) {
+            showToast('Insufficient available MSN Coin to stake.', 'rose');
+            return;
+          }
+
+          state.msnBalance = Number((state.msnBalance - stakeAmt).toFixed(4));
+          state.stakedMsn = Number((state.stakedMsn + stakeAmt).toFixed(4));
+          const bonusHcv = Number((stakeAmt * 0.02).toFixed(2));
+          state.accruedHcv = Number((state.accruedHcv + bonusHcv).toFixed(2));
+          state.hcvBalance = Number((state.hcvBalance + bonusHcv).toFixed(2));
+
+          state.transactions.unshift({
+            id: `MSN-ST-${Math.floor(10000 + Math.random() * 90000)}`,
+            category: 'REWARD',
+            typeLabel: 'Stake & Yield Boost',
+            counterparty: 'Mohaserei Regional Yield Vault',
+            timestamp: nowStamp(),
+            status: 'SETTLED',
+            amount: bonusHcv,
+            asset: 'HCV',
+            direction: '+',
+            memo: `Staked ${formatNumber(stakeAmt, 2)} MSN and claimed +${bonusHcv} HCV yield boost`,
+          });
+
+          saveState();
+          renderPortfolio();
+          renderLedger();
+          document.getElementById('stakeForm').reset();
+          showToast(`Staked ${formatNumber(stakeAmt, 2)} MSN (+${bonusHcv} HCV)`, 'emerald');
+        });
+
+        // Simulate verified contribution
+        document.getElementById('boostContributionBtn').addEventListener('click', () => {
+          state.hcvBalance = Number((state.hcvBalance + 15).toFixed(2));
+          state.uesScore = Math.min(1000, state.uesScore + 8);
+          state.hcvMultiplier = Number(Math.min(2.5, state.hcvMultiplier + 0.02).toFixed(2));
+
+          state.transactions.unshift({
+            id: `MSN-CV-${Math.floor(10000 + Math.random() * 90000)}`,
+            category: 'REWARD',
+            typeLabel: 'HCV Contribution Reward',
+            counterparty: 'MSN Civic Attestation Node',
+            timestamp: nowStamp(),
+            status: 'SETTLED',
+            amount: 15.0,
+            asset: 'HCV',
+            direction: '+',
+            memo: 'Verified contribution (+15 HCV, +8 UES score)',
+          });
+
+          saveState();
+          renderPortfolio();
+          renderLedger();
+          showToast('Recorded +15 HCV & +8 UES score!', 'emerald');
+        });
+
+        // Ledger filters
+        document.querySelectorAll('.ledger-filter-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.ledgerFilter = btn.getAttribute('data-filter');
+            saveState();
+            renderLedger();
+          });
+        });
+
+        // Add demo settlement
+        document.getElementById('addDemoSettlementBtn').addEventListener('click', () => {
+          const demoAmount = 45.0;
+          state.msnBalance = Number((state.msnBalance + demoAmount).toFixed(2));
+          state.transactions.unshift({
+            id: `MSN-MK-${Math.floor(10000 + Math.random() * 90000)}`,
+            category: 'MARKETPLACE',
+            typeLabel: 'MSN Marketplace Settlement',
+            counterparty: 'Battambang Silk & Craft Hub',
+            timestamp: nowStamp(),
+            status: 'SETTLED',
+            amount: demoAmount,
+            asset: 'MSN',
+            direction: '+',
+            memo: 'Demo Layer 2 merchant payout settlement',
+          });
+
+          saveState();
+          renderPortfolio();
+          renderLedger();
+          showToast('Added demo marketplace settlement (+45.00 MSN)', 'cyan');
+        });
+
+        // Modal close handlers
+        document.getElementById('closeTxModalBtn').addEventListener('click', closeTxModal);
+        document.getElementById('doneTxModalBtn').addEventListener('click', closeTxModal);
+        document.getElementById('txModal').addEventListener('click', (e) => {
+          if (e.target.id === 'txModal') closeTxModal();
+        });
+      }
+
+      // Initialize application
+      applyTranslations();
+      renderQrMatrix();
+      renderPortfolio();
+      renderActionPanels();
+      updateSendFeePreview();
+      updateSwapEstimate();
+      renderLedger();
+      bindEvents();
+    })();
+  </script>
+</body>
+</html>
